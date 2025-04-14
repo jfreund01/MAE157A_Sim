@@ -1,0 +1,19 @@
+classdef Rocket
+    properties
+        mass {mustBeNumeric}
+        motor
+        drag_coefficient
+        diameter
+        area
+    end
+    methods
+        function obj = Rocket(mass, motor, drag_coefficient, diameter, area)
+            obj.mass = mass;
+            obj.motor = motor
+            obj.drag_coefficient = drag_coefficient
+            obj.diameter = diameter
+            obj.ar
+        end
+    end
+end
+
