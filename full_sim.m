@@ -21,7 +21,7 @@ motor = Motor(motor_mass, profile, propellant_mass); % create motor
 rocket = Rocket(dry_mass, motor, drag_coefficient, diameter, area); % create rocket
 sim = SimObject(rail_height, rail_length, air_density, angle_of_launch, rocket); % create simulation
 state_list = sim.run_simulation(); % run simulation
-xplot(state_list.x_pos_list, state_list.y_pos_list)
+plot(state_list.time_list, state_list.y_pos_list)
 
 max_state = struct('Apogee', max(state_list.y_pos_list), ...
     'Max_Velocity', max(state_list.y_vel_list), ...
