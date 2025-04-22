@@ -47,10 +47,10 @@ classdef SimObject < handle
             if (obj.time < obj.rocket.first_motor.stage_delay || obj.rocket.two_stage == 0)
                 C_d = obj.rocket.C_d_first; % first stage average C_d
             elseif (obj.time < (obj.rocket.first_motor.stage_delay + ...
-                        obj.rocket.second_motor.stage_delay) || two_stage == 1)
+                        obj.rocket.second_motor.stage_delay) || obj.rocket.two_stage == 1)
                 C_d = obj.rocket.C_d_second; % second stage average C_d
             else
-                C_d = obj.rocket.C_d_parachute
+                C_d = obj.rocket.C_d_second;
             end
         end        
         
@@ -81,16 +81,16 @@ classdef SimObject < handle
             velocity_vector = [obj.x_velocity, obj.y_velocity];
             speed = norm(velocity_vector);
             
-            if (speed > 0 && obj.time > obj.rocket.first_motor.stage_delay + ...
-                        obj.rocket.second_motor.stage_delay)
-                drag_vector = 0.5 * obj.get_drag_coefficient * obj.rocket.parachute_area * obj.air_density * speed^2 * (-velocity_vector/speed);
-            elseif (speed > 0)
+            % if (speed > 0 && obj.time > obj.rocket.first_motor.stage_delay + ...
+            %             obj.rocket.second_motor.stage_delay)
+            %     drag_vector = 0.5 * obj.get_drag_coefficient * obj.rocket.parachute_area * obj.air_density * speed^2 * (-velocity_vector/speed);
+            if (speed > 0)
                 drag_vector = 0.5 * obj.get_drag_coefficient * obj.rocket.area * obj.air_density * speed^2 * (-velocity_vector/speed);
             else
                 drag_vector = [0, 0];
             end
             obj.drag = drag_vector;
-
+            obj.get_mass
             if (obj.y_position < obj.rail_length)
             % calculate net forces in each direction
                 x_force = (thrust * sin(obj.angle_of_launch)) + drag_vector(1);
@@ -99,9 +99,9 @@ classdef SimObject < handle
                 vel_dir = velocity_vector / norm(velocity_vector);
                 x_force = (thrust * vel_dir(1)) + drag_vector(1);
                 y_force = (thrust * vel_dir(2)) - (obj.get_mass * obj.g) + drag_vector(2);
-                obj.get_mass;
                 obj.get_mass * obj.g;
             end
+            
 
 
             obj.y_acceleration = y_force / obj.get_mass; % Calculate acceleration
@@ -155,15 +155,15 @@ classdef SimObject < handle
 
         end
 
-        function obj = SimObject(rail_length, air_density, angle_of_launch, rocket)
+        function obj = SimObject(rail_length, air_density, angle_of_launch, rocket, end_time)
             obj.rail_length = rail_length;
             obj.air_density = air_density;
             obj.angle_of_launch = angle_of_launch;
             obj.rocket = rocket;
             obj.time = 0;
-            obj.time_step = .05; % sim time step
+            obj.time_step = .01; % sim time step
             obj.g = 9.81; % m/s^2
-            obj.end_time = 300; % s
+            obj.end_time = end_time; % s
         end
     end
 end
