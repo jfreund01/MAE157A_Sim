@@ -15,7 +15,8 @@
 g = 9.81; % m/s^2
 rail_length = 3; % m
 angle_of_launch = 0*pi/180; % rad
-end_time = 20; % s
+end_time = 30; % s
+time_step = 0.01; % s
 
 %% ROCKET DIMENSIONS AND COEFFICIENTS %%
 diameter = 0.0508; % m
@@ -45,22 +46,22 @@ N2 = 3; % m
 [CD1, x_cp1, CD2, x_cp2] = rocket_aero(nose_shape, D, LN, XF1, CR1, CT1, XS1, ...
   S1, N1, XF2, CR2, CT2, XS2, S2, N2);
 
-CD1 = .35;
-CD2 = .31;
+CD1 = .23; % override
+CD2 = .20; % override
 
 %% FIRST AND SECOND STAGE SETUP %%
 first_stage_path = 'thrust_profiles/E35.txt';
 second_stage_path = 'thrust_profiles/Apogee_E6.txt';
 
-first_stage_total_mass = 0.374;  % kg, motors
-second_stage_total_mass = 0.267; % kg, motors
+first_stage_total_mass = 0.332;  % kg, motors
+second_stage_total_mass = 0.237; % kg, motors
 
 % first_stage_mass = first_stage_mass / 2.205
 % second_stage_mass = second_stage_mass / 2.205
 
 first_stage_profile = load_thrust_profile(first_stage_path);
 second_stage_profile = load_thrust_profile(second_stage_path);
-ejection_charge = 2 % s
+ejection_charge = 1 % s
 stage_delay = ejection_charge + first_stage_profile.time(end) % s
 
 first_stage_motor_mass = 0.056; % kg
@@ -89,32 +90,63 @@ rocket = Rocket(first_stage_mass, second_stage_mass, ...
     first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
      CD1, CD2, C_d_parachute, parachute_diameter); % create rocket
 
-sim = SimObject(rail_length, angle_of_launch, rocket, end_time); % create simulation
+sim = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step); % create simulation
 
 %% RUN SIMULATION AND PLOT %%
 figure(1)
 state_list = sim.run_simulation(); % run simulation
-sim.off_rail_speed
+
+
+important_states = struct(...
+  'apogee', max(state_list.y_pos_list), ...
+  'max_velocity', max(state_list.y_vel_list), ...
+  'max_acceleration', max(state_list.y_accel_list), ...
+  'first_burnout_time', state_list.first_motor_burnout, ...
+  'second_motor_ignition', state_list.first_motor_ejection, ...
+  'second_motor_burnout', state_list.second_motor_burnout, ...
+  'apogee_time', state_list.apogee_time, ...
+  'max_drag', max(abs(state_list.y_drag_list)), ...
+  'cd1', CD1, 'cd2', CD2, 'x_cp1', x_cp1, 'x_cp2', x_cp2)
+
+
+
+
 subplot(4,1,1);
-plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25)
+plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.5, Color='blue')
+xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
+xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
+xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
+xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
 title('Height (m) vs. time (s)')
 grid on
 grid minor
 
 subplot(4,1,2);
 plot(state_list.time_list, state_list.y_vel_list, LineWidth=1.25)
+xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
+xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
+xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
+xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
 title('Vertical Velocity (m/s^2) vs. time (s)')
 grid on
 grid minor
 
 subplot(4,1,3);
 plot(state_list.time_list, state_list.y_accel_list, LineWidth=1.25)
+xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
+xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
+xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
+xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
 title('Vertical Acceleration (m/s^2) vs. time (s)')
 grid on
 grid minor
 
 subplot(4,1,4);
 plot(state_list.time_list, state_list.y_drag_list, LineWidth=1.25)
+xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
+xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
+xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
+xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
 title('Drag (N) vs. time (s)')
 grid on
 grid minor
@@ -123,12 +155,13 @@ grid minor
 
 
 
-    max_state = struct('Apogee', max(state_list.y_pos_list), ...
-      'Max_Velocity', max(state_list.y_vel_list), ...
-      'Max_Acceleration', max(state_list.y_accel_list), ...
-      'Burnout_Velocity', sim.burnout_velocity, ...
-      'Burnout_Altitude', sim.burnout_altitude, ...
-      'Max_Drag', max(abs(state_list.y_drag_list)), ...
-      'CD1', CD1, 'CD2', CD2, 'x_cp1', x_cp1, 'x_cp2', x_cp2)
+important_states = struct('Apogee', max(state_list.y_pos_list), ...
+  'Max_Velocity', max(state_list.y_vel_list), ...
+  'Max_Acceleration', max(state_list.y_accel_list), ...
+  'First_Burnout_Time', state_list.first_motor_burnout, ...
+  'Second_Motor_Ignition', state_list.first_motor_ejection, ...
+  'Apogee_Time', state_list.apogee_time, ...
+  'Max_Drag', max(abs(state_list.y_drag_list)), ...
+  'CD1', CD1, 'CD2', CD2, 'x_cp1', x_cp1, 'x_cp2', x_cp2)
 
 

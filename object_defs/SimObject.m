@@ -19,6 +19,9 @@ classdef SimObject < handle
         y_velocity = 0;
         y_acceleration = 0;
 
+
+        
+
         drag;
 
 
@@ -142,7 +145,7 @@ classdef SimObject < handle
                 
                 time_list(idx) = obj.time;
             end
-
+            [apogee, apogee_idx] = max(y_pos_list);
             obj.off_rail_speed = interp1(y_pos_list, y_vel_list, 10, "linear")
             obj.burnout_velocity = interp1(time_list, y_vel_list, ...
                 obj.rocket.first_motor.thrust_profile.time(end), "linear"); 
@@ -151,7 +154,11 @@ classdef SimObject < handle
             state_list = struct('y_pos_list', y_pos_list, 'y_vel_list', y_vel_list, ...
                 'x_pos_list', x_pos_list, 'x_vel_list', x_vel_list, ...
                 'x_accel_list', x_accel_list, 'y_accel_list', y_accel_list, ...
-                'time_list', time_list, 'y_drag_list', y_drag_list);
+                'time_list', time_list, 'y_drag_list', y_drag_list, ...
+                'first_motor_burnout', obj.rocket.first_motor.thrust_profile.time(end), ...
+                'first_motor_ejection', obj.rocket.second_motor.thrust_profile.time(1), ...
+                'second_motor_burnout', obj.rocket.second_motor.thrust_profile.time(end), ...
+                'apogee_time', time_list(apogee_idx));
 
         end
 
