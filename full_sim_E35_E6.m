@@ -14,7 +14,6 @@
 %% INITIAL CONDITIONS %%
 g = 9.81; % m/s^2
 rail_length = 3; % m
-air_density = 1.225; % kg/m^3
 angle_of_launch = 0*pi/180; % rad
 end_time = 20; % s
 
@@ -90,7 +89,7 @@ rocket = Rocket(first_stage_mass, second_stage_mass, ...
     first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
      CD1, CD2, C_d_parachute, parachute_diameter); % create rocket
 
-sim = SimObject(rail_length, air_density, angle_of_launch, rocket, end_time); % create simulation
+sim = SimObject(rail_length, angle_of_launch, rocket, end_time); % create simulation
 
 %% RUN SIMULATION AND PLOT %%
 figure(1)

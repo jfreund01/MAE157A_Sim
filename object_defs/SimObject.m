@@ -1,7 +1,6 @@
 classdef SimObject < handle
     properties
         rail_length {mustBeNumeric}
-        air_density {mustBeNumeric}
         angle_of_launch {mustBeNumeric}
         time {mustBeNumeric}
         time_step {mustBeNumeric}
@@ -72,9 +71,9 @@ classdef SimObject < handle
 
         function sim_step = simulate_step(obj)
             % Simulate one step of the motion
-            
+            [T, a, P, rho] = atmosisa(obj.y_position, extended=true);
+
             % find which range the is in for the thrust_profile to get the accurate thrust
-            obj.time = obj.time + obj.time_step; % Update time
             thrust = obj.get_thrust_from_profile(); % Get thrust from profile
 
             % get velocity vector and drag
@@ -83,32 +82,32 @@ classdef SimObject < handle
             
             % if (speed > 0 && obj.time > obj.rocket.first_motor.stage_delay + ...
             %             obj.rocket.second_motor.stage_delay)
-            %     drag_vector = 0.5 * obj.get_drag_coefficient * obj.rocket.parachute_area * obj.air_density * speed^2 * (-velocity_vector/speed);
+            %     drag_vector = 0.5 * obj.get_drag_coefficient() * obj.rocket.parachute_area * rho * speed^2 * (-velocity_vector/speed);
             if (speed > 0)
-                drag_vector = 0.5 * obj.get_drag_coefficient * obj.rocket.area * obj.air_density * speed^2 * (-velocity_vector/speed);
+                drag_vector = 0.5 * obj.get_drag_coefficient() * obj.rocket.area * rho * speed^2 * (-velocity_vector/speed);
             else
                 drag_vector = [0, 0];
             end
             obj.drag = drag_vector;
-            obj.get_mass
+
             if (obj.y_position < obj.rail_length)
             % calculate net forces in each direction
                 x_force = (thrust * sin(obj.angle_of_launch)) + drag_vector(1);
-                y_force = (thrust * cos(obj.angle_of_launch)) - (obj.get_mass * obj.g) + drag_vector(2);
+                y_force = (thrust * cos(obj.angle_of_launch)) - (obj.get_mass() * obj.g) + drag_vector(2);
             else
                 vel_dir = velocity_vector / norm(velocity_vector);
                 x_force = (thrust * vel_dir(1)) + drag_vector(1);
-                y_force = (thrust * vel_dir(2)) - (obj.get_mass * obj.g) + drag_vector(2);
-                obj.get_mass * obj.g;
+                y_force = (thrust * vel_dir(2)) - (obj.get_mass() * obj.g) + drag_vector(2);
+                obj.get_mass() * obj.g;
             end
             
 
 
-            obj.y_acceleration = y_force / obj.get_mass; % Calculate acceleration
+            obj.y_acceleration = y_force / obj.get_mass(); % Calculate acceleration
             obj.y_velocity = obj.y_velocity + (obj.y_acceleration * obj.time_step); % Update velocity
             obj.y_position = obj.y_position + (obj.y_velocity * obj.time_step); % Update position
             
-            obj.x_acceleration = x_force / obj.get_mass; % Calculate acceleration
+            obj.x_acceleration = x_force / obj.get_mass(); % Calculate acceleration
             obj.x_velocity = obj.x_velocity + (obj.x_acceleration * obj.time_step); % Update velocity
             obj.x_position = obj.x_position + (obj.x_velocity * obj.time_step); % Update position
             
@@ -117,6 +116,7 @@ classdef SimObject < handle
                 'x_position', obj.x_position, 'x_velocity', obj.x_velocity, 'x_acceleration', obj.x_acceleration); 
             % Create a struct to hold the simulation step data
             % time += sim_time_step; % Update time
+            obj.time = obj.time + obj.time_step; % Update time
         end
 
         function state_list = run_simulation(obj)
@@ -155,13 +155,12 @@ classdef SimObject < handle
 
         end
 
-        function obj = SimObject(rail_length, air_density, angle_of_launch, rocket, end_time)
+        function obj = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step)
             obj.rail_length = rail_length;
-            obj.air_density = air_density;
             obj.angle_of_launch = angle_of_launch;
             obj.rocket = rocket;
             obj.time = 0;
-            obj.time_step = .01; % sim time step
+            obj.time_step = time_step; % sim time step
             obj.g = 9.81; % m/s^2
             obj.end_time = end_time; % s
         end

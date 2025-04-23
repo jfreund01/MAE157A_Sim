@@ -5,16 +5,19 @@
 % Drag Coefficient 0.75
 
 %% LAUNCH 1
-%% INITIAL CONDITIONS %%
+%% INITIAL CONDITIONS AND SIM SETUP VALUES %%
 g = 9.81; % m/s^2
 rail_length = 3; % m
 air_density = 1.225; % kg/m^3
 angle_of_launch = 0; % rad
 apogee_list = [];
 m_dot = 6.804; % kg/s
+end_time = 200 % s
+time_step = .01 % s
+
 %% FIRST AND SECOND STAGE SETUP %%
 % for propellant_mass = 80:.5:100
-propellant_mass = 95.2
+propellant_mass = 285;
     first_stage_path = 'thrust_profiles/space_shot.txt';
     second_stage_path = 'thrust_profiles/empty.txt';
     
@@ -27,6 +30,7 @@ propellant_mass = 95.2
     first_stage_profile = load_thrust_profile(first_stage_path);
     first_stage_profile.time(2) = propellant_mass / m_dot
     second_stage_profile = load_thrust_profile(second_stage_path);
+
     ejection_charge = 100000; % s
     stage_delay = ejection_charge + first_stage_profile.time(end); % s
     
@@ -42,8 +46,9 @@ propellant_mass = 95.2
     first_stage_profile.time = first_stage_profile.time - first_stage_profile.time(1);
     second_stage_profile.time = second_stage_profile.time - second_stage_profile.time(1) + stage_delay;
     
+    
     %% ROCKET DIMENSIONS AND COEFFICIENTS %%
-    diameter = 0.024892; % m
+    diameter = 0.381; % m
     area = pi * diameter^2 /4; % m^2
     C_d_first = 0.75;
     C_d_second = 0.75;
@@ -58,11 +63,11 @@ propellant_mass = 95.2
     second_stage_motor = Motor(second_stage_motor_mass, second_stage_profile, ...
         second_stage_propellant_mass, 0);
     
-    rocket = Rocket(first_stage_dry_mass, second_stage_dry_mass, ...
+    rocket = Rocket(first_stage_mass + propellant_mass, second_stage_dry_mass, ...
         first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
          C_d_first, C_d_second, C_d_parachute, parachute_diameter); % create rocket
     
-    sim = SimObject(rail_length, air_density, angle_of_launch, rocket); % create simulation
+    sim = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step); % create simulation
     
     %% RUN SIMULATION AND PLOT %%
     figure(1)
