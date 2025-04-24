@@ -1,4 +1,5 @@
 classdef Rocket < handle
+    % define important properties for rocket
     properties
         diameter {mustBeNumeric}
         area {mustBeNumeric}

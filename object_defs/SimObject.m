@@ -46,6 +46,7 @@ classdef SimObject < handle
         end
 
         function C_d = get_drag_coefficient(obj)
+            % Get drag coefficient depending on the stage
             if (obj.time < obj.rocket.first_motor.stage_delay || obj.rocket.two_stage == 0)
                 C_d = obj.rocket.C_d_first; % first stage average C_d
             elseif (obj.time < (obj.rocket.first_motor.stage_delay + ...
@@ -57,6 +58,8 @@ classdef SimObject < handle
         end        
         
         function mass = get_mass(obj)
+            % get mass based on which stage rocket is in, add unburned
+            % motor propellant mass to rocket dry mass
             if (obj.time < obj.rocket.first_motor.stage_delay || obj.rocket.two_stage == 0)
                 unburned_mass = interp1(obj.rocket.first_motor.mass_profile.time, obj.rocket.first_motor.mass_profile.mass, obj.time, 'linear', 'extrap');
                 if unburned_mass < obj.rocket.first_motor.mass_profile.mass(end)
@@ -83,6 +86,8 @@ classdef SimObject < handle
             velocity_vector = [obj.x_velocity, obj.y_velocity];
             speed = norm(velocity_vector);
             
+            % calculate drag vector that opposes speed based on which stage
+            % rocket is in
             if (speed > 0 && obj.time > obj.rocket.second_motor.stage_delay)
                 drag_vector = 0.5 * obj.get_drag_coefficient() * obj.rocket.parachute_area * rho * speed^2 * (-velocity_vector/speed);
             elseif (speed > 0)
@@ -105,7 +110,8 @@ classdef SimObject < handle
 
             
 
-
+            % Update acceleration, velocity, and position using previously
+            % calculated force
             obj.y_acceleration = y_force / obj.get_mass(); % Calculate acceleration
             obj.y_velocity = obj.y_velocity + (obj.y_acceleration * obj.time_step); % Update velocity
             obj.y_position = obj.y_position + (obj.y_velocity * obj.time_step); % Update position
@@ -127,6 +133,8 @@ classdef SimObject < handle
             obj.time = obj.time + obj.time_step; % Update time
         end
 
+        
+        % function to run simulation and create the states list
         function state_list = run_simulation(obj)
             n_steps = ceil(obj.end_time / obj.time_step) + 1;
             x_pos_list = zeros(1, n_steps);

@@ -1,4 +1,6 @@
 classdef Motor < handle
+    % define important properties for motors (mass, prop mass, thrust
+    % profile, mass profile, stage delay)
     properties
         mass {mustBeNumeric}
         m_prop {mustBeNumeric}
