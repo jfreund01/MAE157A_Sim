@@ -12,8 +12,8 @@ air_density = 1.225; % kg/m^3
 angle_of_launch = 0; % rad
 apogee_list = [];
 m_dot = 6.804; % kg/s
-end_time = 200 % s
-time_step = .01 % s
+end_time = 300 % s
+time_step = .015% s
 
 %% FIRST AND SECOND STAGE SETUP %%
 % for propellant_mass = 80:.5:100

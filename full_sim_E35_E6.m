@@ -1,14 +1,3 @@
-% Launch    Rocket          Diameter [in]   Motor       Dry Mass [g]    Parachute Diameter [in]
-% 1         Control Rocket  0.98            Estes A8-3  49              12
-% 2         Control Rocket  1.38            Estes B4-4  89.2            12
-% 3         Your Rocket     Measure         Estes A8-3  Measure         Measure
-% 4         Your Rocket     Measure         Estes B4-4  Measure         Measure
-
-% i. Trajectory with no drag
-% ii. Trajectory with vehicle CD = 0.5 and parachute CD =1.5
-% iii. Trajectory with vehicle CD =0.8 and parachute CD =2
-% iv. Actual trajectory, using csv data from bruinlearn.
-
 
 %% LAUNCH 1
 %% INITIAL CONDITIONS %%
@@ -21,30 +10,30 @@ time_step = 0.01; % s
 %% ROCKET DIMENSIONS AND COEFFICIENTS %%
 diameter = 0.0508; % m
 area = pi * diameter^2 /4; % m^2
-C_d_parachute = 0;
+C_d_parachute = 2;
 two_stage = 1;
-parachute_diameter = .3048 % m
+parachute_diameter = .7 % m
 
-nose_shape = 4; % elliptical
-LN = .076; % m
-D = .051; % m
-XF1 = .305; % m
-CR1 = .048; % m
-CT1 = .025; % m
-XS1 = .038; % m
-S1 = .038; % m
-N1 = 3; % m
-
-XF2 = .415; % m
-CR2 = .048; % m
-CT2 = .025; % m
-XS2 = .038; % m
-S2 = .03; % m
-N2 = 3; % m
-
-
-[CD1, x_cp1, CD2, x_cp2] = rocket_aero(nose_shape, D, LN, XF1, CR1, CT1, XS1, ...
-  S1, N1, XF2, CR2, CT2, XS2, S2, N2);
+% nose_shape = 4; % elliptical
+% LN = .076; % m
+% D = .051; % m
+% XF1 = .305; % m
+% CR1 = .048; % m
+% CT1 = .025; % m
+% XS1 = .038; % m
+% S1 = .038; % m
+% N1 = 3; % m
+% 
+% XF2 = .415; % m
+% CR2 = .048; % m
+% CT2 = .025; % m
+% XS2 = .038; % m
+% S2 = .03; % m
+% N2 = 3; % m
+% 
+% 
+% [CD1, x_cp1, CD2, x_cp2] = rocket_aero(nose_shape, D, LN, XF1, CR1, CT1, XS1, ...
+%   S1, N1, XF2, CR2, CT2, XS2, S2, N2);
 
 CD1 = .23; % override
 CD2 = .20; % override
@@ -61,8 +50,9 @@ second_stage_total_mass = 0.237; % kg, motors
 
 first_stage_profile = load_thrust_profile(first_stage_path);
 second_stage_profile = load_thrust_profile(second_stage_path);
-ejection_charge = 1 % s
-stage_delay = ejection_charge + first_stage_profile.time(end) % s
+ejection_charge_1 = 1 % s
+ejection_charge_2 = 8 % s
+
 
 first_stage_motor_mass = 0.056; % kg
 second_stage_motor_mass = 0.046; %kg
@@ -77,14 +67,18 @@ second_stage_propellant_mass = 0.022; % kg
 % second_stage_dry_mass = second_stage_mass - second_stage_propellant_mass; % kg (second stage)
 
 first_stage_profile.time = first_stage_profile.time - first_stage_profile.time(1);
-second_stage_profile.time = second_stage_profile.time - second_stage_profile.time(1) + stage_delay;
+second_stage_profile.time = second_stage_profile.time - second_stage_profile.time(1);
+
+
+stage_delay_2 = second_stage_profile.time(end) + ejection_charge_2 + stage_delay_1
+
 
 %% OBJECT CREATION %%
 % subtract first time in profile from all other times
 first_stage_motor = Motor(first_stage_motor_mass, first_stage_profile, ...
-    first_stage_propellant_mass, stage_delay);
+    first_stage_propellant_mass, stage_delay_1);
 second_stage_motor = Motor(second_stage_motor_mass, second_stage_profile, ...
-    second_stage_propellant_mass, 0);
+    second_stage_propellant_mass, stage_delay_2);
 
 rocket = Rocket(first_stage_mass, second_stage_mass, ...
     first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
@@ -93,7 +87,6 @@ rocket = Rocket(first_stage_mass, second_stage_mass, ...
 sim = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step); % create simulation
 
 %% RUN SIMULATION AND PLOT %%
-figure(1)
 state_list = sim.run_simulation(); % run simulation
 
 
@@ -111,45 +104,80 @@ important_states = struct(...
 
 
 
-subplot(4,1,1);
-plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.5, Color='blue')
-xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
-xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
-xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
-xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
-title('Height (m) vs. time (s)')
+figure(1)
+plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.5, ...
+    Color='blue', DisplayName='Altitude (ft)')
+xline(important_states.first_burnout_time, LineWidth=1.25, ...
+    Color='green', DisplayName='First Stage Burnout')
+xline(important_states.second_motor_ignition, LineWidth=1.25, ...
+    Color='red', DisplayName='Second Stage Ignition')
+xline(important_states.apogee_time, LineWidth=1.25, ...
+    Color='magenta', DisplayName='Apogee')
+xline(important_states.second_motor_burnout, LineWidth=1.25, ...
+    Color='#FFA500', DisplayName='Second Stage Burnout')
+title('Altitude (ft) vs. time (s)')
+xlabel('time (s)')
+ylabel('Altitude (ft)')
 grid on
 grid minor
+legend();
 
-subplot(4,1,2);
-plot(state_list.time_list, state_list.y_vel_list, LineWidth=1.25)
-xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
-xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
-xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
-xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
-title('Vertical Velocity (m/s^2) vs. time (s)')
+figure(2)
+plot(state_list.time_list, state_list.y_vel_list, LineWidth=1.25, ...
+    DisplayName='Vertical Velocity (ft/s)')
+xline(important_states.first_burnout_time, LineWidth=1.25, ...
+    Color='green', DisplayName='First Stage Burnout')
+xline(important_states.second_motor_ignition, LineWidth=1.25, ...
+    Color='red', DisplayName='Second Stage Ignition')
+xline(important_states.apogee_time, LineWidth=1.25, ...
+    Color='magenta', DisplayName='Apogee')
+xline(important_states.second_motor_burnout, LineWidth=1.25, ...
+    Color='#FFA500', DisplayName='Second Stage Burnout')
+title('Vertical Velocity (ft/s) vs. time (s)')
+xlabel('time (s)')
+ylabel('Vertical Velocity (ft/s)')
 grid on
 grid minor
+legend();
 
-subplot(4,1,3);
-plot(state_list.time_list, state_list.y_accel_list, LineWidth=1.25)
-xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
-xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
-xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
-xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
+
+figure(3)
+plot(state_list.time_list, state_list.y_accel_list, LineWidth=1.25, ...
+    DisplayName='Vertical Acceleration (ft/s^2)')
+xline(important_states.first_burnout_time, LineWidth=1.25, ...
+    Color='green', DisplayName='First Stage Burnout')
+xline(important_states.second_motor_ignition, LineWidth=1.25, ...
+    Color='red', DisplayName='Second Stage Ignition')
+xline(important_states.apogee_time, LineWidth=1.25, ...
+    Color='magenta', DisplayName='Apogee')
+xline(important_states.second_motor_burnout, LineWidth=1.25, ...
+    Color='#FFA500', DisplayName='Second Stage Burnout')
 title('Vertical Acceleration (m/s^2) vs. time (s)')
+xlabel('time (s)')
+ylabel('Acceleration (ft/s^2)')
 grid on
 grid minor
+legend();
 
-subplot(4,1,4);
-plot(state_list.time_list, state_list.y_drag_list, LineWidth=1.25)
-xline(important_states.first_burnout_time, LineWidth=1.25, Color='green')
-xline(important_states.second_motor_ignition, LineWidth=1.25, Color='red')
-xline(important_states.apogee_time, LineWidth=1.25, Color='magenta')
-xline(important_states.second_motor_burnout, LineWidth=1.25, Color='#FFA500')
+
+figure(4)
+plot(state_list.time_list, state_list.y_drag_list, LineWidth=1.25, ...
+    DisplayName='Vertical Drag (ft/s^2)')
+xline(important_states.first_burnout_time, LineWidth=1.25, ...
+    Color='green', DisplayName='First Stage Burnout')
+xline(important_states.second_motor_ignition, LineWidth=1.25, ...
+    Color='red', DisplayName='Second Stage Ignition')
+xline(important_states.apogee_time, LineWidth=1.25, ...
+    Color='magenta', DisplayName='Apogee')
+xline(important_states.second_motor_burnout, LineWidth=1.25, ...
+    Color='#FFA500', DisplayName='Second Stage Burnout')
 title('Drag (N) vs. time (s)')
+xlabel('time (s)')
+ylabel('Drag (N)')
 grid on
 grid minor
+legend();
+
 
 % rocket_aero(nose_shape,D,LN,XF,CR,CT,XS,S,N,XF2,CR2,CT2,XS2,S2,N2)
 

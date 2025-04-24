@@ -1,8 +1,11 @@
-% Launch    Rocket          Diameter [in]   Motor       Dry Mass [g]    Parachute Diameter [in]
-% 1         Control Rocket  0.98            Estes A8-3  49              12
-% 2         Control Rocket  1.38            Estes B4-4  89.2            12
-% 3         Your Rocket     Measure         Estes A8-3  Measure         Measure
-% 4         Your Rocket     Measure         Estes B4-4  Measure         Measure
+% Launch Rocket Diameter [in] Motor Dry Mass [g]
+% (with empty
+% motor)
+% Parachute Diameter [in]
+% 1 Control Rocket 0.98 Estes B4-4 80 12
+% 2 Control Rocket 1.38 Estes B4-4 70 12
+% 3 Your Rocket Measure Estes A8-3 Measure Measure
+% 4 Your Rocket Measure Estes B6-6 Measure Measure
 
 % i. Trajectory with no drag
 % ii. Trajectory with vehicle CD = 0.5 and parachute CD =1.5
@@ -13,15 +16,16 @@
 %% LAUNCH 1
 %% INITIAL CONDITIONS %%
 g = 9.81; % m/s^2
-rail_length = 3; % m
-air_density = 1.225; % kg/m^3
-angle_of_launch = 0; % rad
+rail_length = 1.5; % m
+angle_of_launch = 10*pi/180; % rad
+end_time = 40; % s
+time_step = .01 % s
 
 %% FIRST AND SECOND STAGE SETUP %%
-first_stage_path = 'thrust_profiles/B4.txt';
+first_stage_path = 'thrust_profiles/A8.txt';
 second_stage_path = 'thrust_profiles/empty.txt';
 
-first_stage_mass = 0.0892  % kg
+first_stage_mass = 0.080 + .006  % kg
 second_stage_mass = first_stage_mass % kg
 
 % first_stage_mass = first_stage_mass / 2.205
@@ -45,11 +49,11 @@ first_stage_profile.time = first_stage_profile.time - first_stage_profile.time(1
 second_stage_profile.time = second_stage_profile.time - second_stage_profile.time(1) + stage_delay;
 
 %% ROCKET DIMENSIONS AND COEFFICIENTS %%
-diameter = 0.024892; % m
+diameter = 0.035052; % m
 area = pi * diameter^2 /4; % m^2
 C_d_first = 0;
 C_d_second = 0;
-C_d_parachute = 0;
+C_d_parachute = 2;
 two_stage = 0;
 parachute_diameter = .3048 % m
 
@@ -64,39 +68,20 @@ rocket = Rocket(first_stage_dry_mass, second_stage_dry_mass, ...
     first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
      C_d_first, C_d_second, C_d_parachute, parachute_diameter); % create rocket
 
-sim = SimObject(rail_length, air_density, angle_of_launch, rocket); % create simulation
+sim = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step); % create simulation
 
 %% RUN SIMULATION AND PLOT %%
 figure(1)
 state_list = sim.run_simulation(); % run simulation
-sim.off_rail_speed
-subplot(4,1,1);
-plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25)
+plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25, DisplayName='no drag')
 title('Height (m) vs. time (s)')
 grid on
 grid minor
+hold on
 
-subplot(4,1,2);
-plot(state_list.time_list, state_list.y_vel_list, LineWidth=1.25)
-title('Vertical Velocity (m/s^2) vs. time (s)')
-grid on
-grid minor
-
-subplot(4,1,3);
-plot(state_list.time_list, state_list.y_accel_list, LineWidth=1.25)
-title('Vertical Acceleration (m/s^2) vs. time (s)')
-grid on
-grid minor
-
-subplot(4,1,4);
-plot(state_list.time_list, state_list.y_drag_list, LineWidth=1.25)
-title('Drag (N) vs. time (s)')
-grid on
-grid minor
-
-max_state = struct('Apogee', max(state_list.y_pos_list) * 3.28, ...
-  'Max_Velocity', max(state_list.y_vel_list) * 3.28, ...
-  'Max_Acceleration', max(state_list.y_accel_list) * 3.28)
+max_state = struct('Apogee', max(state_list.y_pos_list), ...
+  'Max_Velocity', max(state_list.y_vel_list), ...
+  'Max_Acceleration', max(state_list.y_accel_list))
 
 
 
@@ -120,39 +105,14 @@ rocket = Rocket(first_stage_dry_mass, second_stage_dry_mass, ...
     first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
      C_d_first, C_d_second, C_d_parachute, parachute_diameter); % create rocket
 
-sim = SimObject(rail_length, air_density, angle_of_launch, rocket); % create simulation
+sim = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step); % create simulation
 
 %% RUN SIMULATION AND PLOT %%
-figure(2)
 state_list = sim.run_simulation(); % run simulation
-sim.off_rail_speed
-subplot(4,1,1);
-plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25)
+
+plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25, DisplayName='Cd = 0.5')
 title('Height (m) vs. time (s)')
-grid on
-grid minor
 
-subplot(4,1,2);
-plot(state_list.time_list, state_list.y_vel_list, LineWidth=1.25)
-title('Vertical Velocity (m/s^2) vs. time (s)')
-grid on
-grid minor
-
-subplot(4,1,3);
-plot(state_list.time_list, state_list.y_accel_list, LineWidth=1.25)
-title('Vertical Acceleration (m/s^2) vs. time (s)')
-grid on
-grid minor
-
-subplot(4,1,4);
-plot(state_list.time_list, state_list.y_drag_list, LineWidth=1.25)
-title('Drag (N) vs. time (s)')
-grid on
-grid minor
-
-max_state = struct('Apogee', max(state_list.y_pos_list) * 3.28, ...
-  'Max_Velocity', max(state_list.y_vel_list) * 3.28, ...
-  'Max_Acceleration', max(state_list.y_accel_list) * 3.28)
 
 
 %% LAUNCH 3
@@ -173,37 +133,16 @@ rocket = Rocket(first_stage_dry_mass, second_stage_dry_mass, ...
     first_stage_motor, second_stage_motor, diameter, area, two_stage, ...
      C_d_first, C_d_second, C_d_parachute, parachute_diameter); % create rocket
 
-sim = SimObject(rail_length, air_density, angle_of_launch, rocket); % create simulation
+sim = SimObject(rail_length, angle_of_launch, rocket, end_time, time_step); % create simulation
 
 %% RUN SIMULATION AND PLOT %%
-figure(3)
 state_list = sim.run_simulation(); % run simulation
-sim.off_rail_speed
-subplot(4,1,1);
-plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25)
+
+
+plot(state_list.time_list, state_list.y_pos_list, LineWidth=1.25, DisplayName='Cd = 0.8')
 title('Height (m) vs. time (s)')
-grid on
-grid minor
 
-subplot(4,1,2);
-plot(state_list.time_list, state_list.y_vel_list, LineWidth=1.25)
-title('Vertical Velocity (m/s^2) vs. time (s)')
-grid on
-grid minor
+exper = readtable("Untitled.txt")
+scatter(exper{:, 1}, exper{:, 3})
 
-subplot(4,1,3);
-plot(state_list.time_list, state_list.y_accel_list, LineWidth=1.25)
-title('Vertical Acceleration (m/s^2) vs. time (s)')
-grid on
-grid minor
-
-subplot(4,1,4);
-plot(state_list.time_list, state_list.y_drag_list, LineWidth=1.25)
-title('Drag (N) vs. time (s)')
-grid on
-grid minor
-
-max_state = struct('Apogee', max(state_list.y_pos_list) * 3.28, ...
-  'Max_Velocity', max(state_list.y_vel_list) * 3.28, ...
-  'Max_Acceleration', max(state_list.y_accel_list) * 3.28)
-
+legend();

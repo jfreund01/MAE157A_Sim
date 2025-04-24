@@ -1,12 +1,23 @@
-LN = 0.1; % m
-D = 0.05; % m
-nFins = 4;
-CR = 0.06; % m
-CT = 0.025; % m
-XF = 0.39; % m
-XS = 0.045; % m
-S = 0.04; % m 
-xCG = 0.25; % m
+LN = 0.4; % m
+D = 0.025; % m
+nFins = 3;
+CR = 0.0373; % m
+CT = 0.0254; % m
+XF = 0.35; % m
+XS = 0.006; % m
+S = 0.0378; % m 
+xCG = 0.2667; % m
+
+
+% Length: 15.75 in
+% Diameter: .99 in
+% Nosecone: 4.05in long
+% Root chord: 1.47in
+% Tip chord: 1.00in
+% Xs: .24 in
+% Xf: 13.80in
+% S: 1.49 in
+
 
 [ CNa_n, xN, Kfb, LF, CNa_f, CNa_fb, xf, CNa_T, xCP, sm ] = ... 
     rocketCP('elliptical', LN, D, nFins, S, XS, CR, CT, XF, xCG)

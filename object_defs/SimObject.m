@@ -74,7 +74,7 @@ classdef SimObject < handle
 
         function sim_step = simulate_step(obj)
             % Simulate one step of the motion
-            [T, a, P, rho] = atmosisa(obj.y_position, extended=true);
+            [~, ~, ~, rho] = atmosisa(obj.y_position, extended=true);
 
             % find which range the is in for the thrust_profile to get the accurate thrust
             thrust = obj.get_thrust_from_profile(); % Get thrust from profile
@@ -83,10 +83,9 @@ classdef SimObject < handle
             velocity_vector = [obj.x_velocity, obj.y_velocity];
             speed = norm(velocity_vector);
             
-            % if (speed > 0 && obj.time > obj.rocket.first_motor.stage_delay + ...
-            %             obj.rocket.second_motor.stage_delay)
-            %     drag_vector = 0.5 * obj.get_drag_coefficient() * obj.rocket.parachute_area * rho * speed^2 * (-velocity_vector/speed);
-            if (speed > 0)
+            if (speed > 0 && obj.time > obj.rocket.second_motor.stage_delay)
+                drag_vector = 0.5 * obj.get_drag_coefficient() * obj.rocket.parachute_area * rho * speed^2 * (-velocity_vector/speed);
+            elseif (speed > 0)
                 drag_vector = 0.5 * obj.get_drag_coefficient() * obj.rocket.area * rho * speed^2 * (-velocity_vector/speed);
             else
                 drag_vector = [0, 0];
@@ -103,6 +102,7 @@ classdef SimObject < handle
                 y_force = (thrust * vel_dir(2)) - (obj.get_mass() * obj.g) + drag_vector(2);
                 obj.get_mass() * obj.g;
             end
+
             
 
 
@@ -113,10 +113,15 @@ classdef SimObject < handle
             obj.x_acceleration = x_force / obj.get_mass(); % Calculate acceleration
             obj.x_velocity = obj.x_velocity + (obj.x_acceleration * obj.time_step); % Update velocity
             obj.x_position = obj.x_position + (obj.x_velocity * obj.time_step); % Update position
-            
+
+            if (obj.y_position < 0)
+                obj.y_position = 0;
+            end
+
             sim_step = struct('y_position', obj.y_position, 'y_velocity', obj.y_velocity, ...
                 'y_acceleration', obj.y_acceleration, 'time', obj.time, 'thrust', thrust, ...
                 'x_position', obj.x_position, 'x_velocity', obj.x_velocity, 'x_acceleration', obj.x_acceleration); 
+            
             % Create a struct to hold the simulation step data
             % time += sim_time_step; % Update time
             obj.time = obj.time + obj.time_step; % Update time
@@ -146,11 +151,11 @@ classdef SimObject < handle
                 time_list(idx) = obj.time;
             end
             [apogee, apogee_idx] = max(y_pos_list);
-            obj.off_rail_speed = interp1(y_pos_list, y_vel_list, 10, "linear")
-            obj.burnout_velocity = interp1(time_list, y_vel_list, ...
-                obj.rocket.first_motor.thrust_profile.time(end), "linear"); 
-            obj.burnout_altitude = interp1(time_list, y_pos_list, ...
-                obj.rocket.first_motor.thrust_profile.time(end), "linear");
+            % obj.off_rail_speed = interp1(y_pos_list, y_vel_list, 10, "linear")
+            % obj.burnout_velocity = interp1(time_list, y_vel_list, ...
+            %     obj.rocket.first_motor.thrust_profile.time(end), "linear"); 
+            % obj.burnout_altitude = interp1(time_list, y_pos_list, ...
+            %     obj.rocket.first_motor.thrust_profile.time(end), "linear");
             state_list = struct('y_pos_list', y_pos_list, 'y_vel_list', y_vel_list, ...
                 'x_pos_list', x_pos_list, 'x_vel_list', x_vel_list, ...
                 'x_accel_list', x_accel_list, 'y_accel_list', y_accel_list, ...
@@ -158,7 +163,9 @@ classdef SimObject < handle
                 'first_motor_burnout', obj.rocket.first_motor.thrust_profile.time(end), ...
                 'first_motor_ejection', obj.rocket.second_motor.thrust_profile.time(1), ...
                 'second_motor_burnout', obj.rocket.second_motor.thrust_profile.time(end), ...
-                'apogee_time', time_list(apogee_idx));
+                'apogee_time', time_list(apogee_idx), ...
+                'second_motor_ejection', obj.rocket.second_motor.stage_delay);
+                                
 
         end
 
